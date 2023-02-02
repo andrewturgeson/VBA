@@ -1,0 +1,31 @@
+Sub Thesarusaurus()
+'Thesaurus test
+
+Dim MSWord As Object, oSyn As Object
+Dim cel As range, i%, j%
+Set MSWord = CreateObject("Word.Application")
+Application.ScreenUpdating = False
+With [B:B].Resize(, Columns.count - 1)
+    .ClearContents
+    .Font.Bold = False
+End With
+On Error Resume Next
+For Each cel In range("A1:A" & Cells(Rows.count, "A").End(3).Row)
+    Set oSyn = MSWord.SynonymInfo(cel.Value)
+    If oSyn.Found Then
+        For i = 1 To oSyn.MeaningCount
+            For j = 1 To 5
+                With Cells(cel.Row, Columns.count).End(1)(1, 2)
+                    .Value = oSyn.SynonymList(i)(j)
+                    If j = 1 Then .Font.Bold = True
+                End With
+            Next j
+        Next i
+    End If
+Next
+On Error GoTo 0
+Set oSyn = Nothing
+Set MSWord = Nothing
+
+    
+End Sub
