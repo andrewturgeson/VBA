@@ -1,0 +1,116 @@
+
+Sub MergeFunctionalLocationBOM()
+
+Dim B1, B2, B3, B4, c, D, E, f, g, rowCount, i As Long
+Dim progress, t0, t01, t1 As Single: t0 = Timer
+Dim SheetName, RegText As String: SheetName = "material number BOM": RegText = "^([0-9]*)$"
+Dim regEx As New RegExp
+
+Application.Calculation = XlCalculation.xlCalculationManual: 'turns off autocalculation so it should run faster... Formulas autoCalculate keeps turning back on (after Excel restart?)...
+
+'Create Blank Column
+'Create Blank Column
+'Create Blank Column
+If True Then
+If Worksheets(SheetName).range("A1") <> "FC" Then
+    Worksheets(SheetName).range("A1").EntireColumn.Insert
+    Worksheets(SheetName).Cells(1, 1) = "FC"
+End If
+End If
+
+'Find Key Column Numbers of Sheet
+'Find Key Column Numbers of Sheet
+'Find Key Column Numbers of Sheet
+If True Then
+    For Each A In Worksheets(SheetName).range("A1:AZ1").Cells
+        If A.Value = "BOM_Level" Then
+            B1 = A.Column
+        ElseIf A.Value = "BOM_0" Then
+            B2 = A.Column
+        ElseIf A.Value = "IH08_EQP_Description" Then
+            B3 = A.Column
+        ElseIf A.Value = "ZMMPOTEXT_MAT_Material_Description" Then
+            B4 = A.Column
+        ElseIf A.Value = "ZMMPOTEXT_MAT_PO_Text" Then
+            B5 = A.Column
+        End If
+    Next
+'MsgBox B1 & " " & B2 & " " & B3 & " " & B4 :'debug
+End If
+
+'AKZ/OKZ Name Translation for BOM
+'AKZ/OKZ Name Translation for BOM
+'AKZ/OKZ Name Translation for BOM
+If False Then
+    rowCount = Worksheets(SheetName).UsedRange.Rows.count
+    t01 = Timer - t0
+    t1 = Timer
+    ufProgress.LabelProgress.Width = 0
+    ufProgress.Show
+    'MsgBox rowCount: 'debug
+    For Each A In Worksheets(SheetName).range("B2:B" & rowCount)
+        c = A.Row
+        D = Cells(c, B1).Value
+        FunctionalLocationName = ""
+        FunctionalSearchName = ""
+        
+        progress = c / rowCount
+        
+        With ufProgress
+            .LabelCaption.Caption = "Progress: " & progress * 100 & "%  " & "Processing Row " & c & " of " & rowCount & "  Time:" & (t01 + Timer - t1) \ 3600 & "h " & ((t01 + Timer - t1) Mod 3600) \ 60 & "m " & ((t01 + Timer - t1) Mod 3600) Mod 60 & "s " & "Estimated Time: " & ((Timer - t1) / progress + t01) \ 3600 & "h " & (((Timer - t1) / progress + t01) Mod 3600) \ 60 & "m " & (((Timer - t1) / progress + t01) Mod 3600) Mod 60 & "s "
+            .LabelProgress.Width = progress * (.FrameProgress.Width)
+        End With
+        DoEvents
+            
+        For i = 0 To D Step 1
+            E = Cells(c, B2 + i).Value
+                
+            If E = "" Then
+                Exit For
+            End If
+                 
+            With regEx
+                .Global = True
+                .MultiLine = True
+                .IgnoreCase = False
+                .pattern = RegText
+            End With
+            
+            If regEx.Test(E) Then
+                FunctionalSearchName = Cells(c, B2 + i - 1).Value
+                FunctionalLocationName = FunctionalSearchName
+                For j = i To D Step 1
+                    FunctionalLocationName = FunctionalLocationName & "=" & Cells(c, B2 + j)
+                Next j
+                i = D: 'ends the i for loop early
+            End If
+        Next i
+    'MsgBox C & " " & D & " " & FunctionalLocationName: 'debug
+    Cells(c, 1) = FunctionalLocationName
+    Next A
+    Unload ufProgress
+End If
+
+'Sort out blank cells in FunctionalLocationName
+If True Then
+    
+    'MsgBox Worksheets("FL").range("A1").End(xlDown).Row
+    f = Worksheets("FL").range("A1").End(xlDown).Row
+    g = Worksheets(SheetName).range("B2").End(xlDown).Row
+    MsgBox f & "   " & g
+    Worksheets(SheetName).range("A:A").AutoFilter Field:=1, Criteria1:="<>": 'apply filter to remove blanks
+    'copy/paste
+    
+    'Worksheets(SheetName).range(Cells(2, 13), Cells(3, 14)) = "test"
+    
+    Worksheets(SheetName).range(Cells(2, 1), Cells(Worksheets(SheetName).range("B2").End(xlDown).Row, 1)).Copy Worksheets("FL").Cells(163481, 1)
+    Worksheets(SheetName).range(Cells(2, B3), Cells(Worksheets(SheetName).range("B2").End(xlDown).Row, B3)).Copy Worksheets("FL").Cells(163481, 11)
+    Worksheets(SheetName).range(Cells(2, B4), Cells(Worksheets(SheetName).range("B2").End(xlDown).Row, B4)).Copy Worksheets("FL").Cells(163481, 12)
+    Worksheets(SheetName).range(Cells(2, B5), Cells(Worksheets(SheetName).range("B2").End(xlDown).Row, B5)).Copy Worksheets("FL").Cells(163481, 13)
+    
+    Worksheets(SheetName).range("A:A").AutoFilter Field:=1: 'unapply filter
+    MsgBox "manually delete the row of FL name of BELLOWS(?) V2214=T810=EP492.2 is already and enrtry so... Change name to V2214=T810=EP492.2=BELLOWS(?)"
+    
+End If
+
+End Sub
