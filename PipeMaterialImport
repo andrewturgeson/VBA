@@ -1,0 +1,37 @@
+Sub PipeMaterialFromPython()
+    
+
+Dim loc, sortArray As Variant
+Dim search, colLetter, material As String
+Dim colNumberAs As Long
+
+colLetter = "CX"
+colNumber = range(colLetter & 1).Column
+
+search = "vvv"
+
+
+material = "Vinyl Ester Resin-RTRP"
+sortArray = Array("A125LG01")
+
+For Each f In sortArray
+    MsgBox f
+    Worksheets("FL").range("CW:CW").AutoFilter Field:=colNumber - 1
+    Worksheets("FL").range("CW:CW").AutoFilter Field:=colNumber - 1, Criteria1:=f:
+    
+
+Set loc = Worksheets("FL").range(colLetter & ":" & colLetter).Find(search, LookIn:=xlValues)
+Set firstloc = loc
+If Not loc Is Nothing Then
+Do
+    loc.Activate
+    i = loc.Row
+    ActiveCell.Value = material
+    Set loc = Worksheets("FL").range(colLetter & ":" & colLetter).Find(search, LookIn:=xlValues, After:=Cells(i, colNumber))
+
+Loop While Not loc Is Nothing:  'And loc.Row <> firstloc.Row
+End If
+
+Next f
+   MsgBox "end"
+End Sub
