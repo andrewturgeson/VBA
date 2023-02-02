@@ -1,0 +1,60 @@
+Sub regEx()
+'Regular Expression Test
+'Copy and Paste matched regular expression to new worksheet
+'Excel's Regular Expression using Microsoft VBScript Regular Expressions 5.5
+'
+
+'!!! if VBScript RegEx 5.5 is disabled in the VBA's tools/references module, it will not work  !!!
+
+
+ Dim strPattern As String: strPattern = "^[A-Z][A-Z]_[A-Z][A-Z]_[A-Z][A-Z]_[A-Z][A-Z]$"
+ Dim newLinePattern As String: newLinePattern = "(^.*)\n(.*)"
+    Dim strReplace As String: strReplace = ""
+    Dim regEx As New RegExp
+    Dim regExSec As New RegExp
+    Dim strInput As String
+    Dim strInputSec As String
+    Dim description As String
+    Dim range As range
+    
+    Set range = ActiveSheet.range("A1:A800")
+    
+    For Each c In range
+        If strPattern <> "" Then
+            strInput = c.Value
+            description = c.Offset(0, 1).Value
+            
+            With regEx
+                .Global = True
+                .MultiLine = True
+                .IgnoreCase = False
+                .pattern = strPattern
+            End With
+            
+            With regExSec
+                .Global = True
+                .MultiLine = True
+                .IgnoreCase = False
+                .pattern = newLinePattern
+            End With
+            
+            If regEx.Test(strInput) Then
+                c.Offset(0, 4) = strInput
+                
+                If regExSec.Test(description) Then
+                    c.Offset(0, 5) = regExSec.Replace(description, "$1 $2")
+                Else
+                    c.Offset(0, 5) = description
+                End If
+            End If
+                 
+                 
+            
+            
+            
+            
+            
+        End If
+    Next
+    
+End Sub
