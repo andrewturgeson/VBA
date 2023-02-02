@@ -1,0 +1,229 @@
+Sub MergeFunctionalLocationBOM()
+
+'"C:\Users\TURGESOEX\OneDrive - Wacker Chemie AG\CHA Asset Classification\FL V2.1.xlsb"
+
+'turns off autocalculation so it should run faster... Formulas autoCalculate keeps turning back on (after Excel restart?)...
+Application.Calculation = XlCalculation.xlCalculationManual
+
+Dim ALL As Variant
+'Note: there are no GXXX form entries in the BOM and they crash the algorithm, so they have been manual added as a general spreadsheet to be processed later.
+'ALL = Array("E2000", "E2001", "E2002", "E2003", "E2004", "E2005", "E2006", "E2007", "E2008", "E2009", "E2010", "E2011", "E2012", "E2013", "E2014", "E2015", "E2016", "E2017", "E2018", "E2019", "E2020", "E2021", "E2022", "E2023", "E2024", "E2025", "E2030", "E2032", "G2250", "G2251", "G2252", "G2300", "G2401", "G2402", "G2403", "G2404", "G2410", "G2411", _
+ "G2412", "G2421", "G2422", "G2423", "G2424", "G2425", "G2426", "G2427", "G2428", "G2429", "G2430", "G2431", "G2432", "G2433", "G2434", "G2435", "G2436", "G2437", "G2438", "G2439", "G2440", "G2441", "G2442", "G2443", "G2470", "G2471", "G2472", "G2473", "G2474", "G2475", "G2476", "G2477", "G2478", "G2479", "G2480", "G2481", "G2482", "G2483", "G2484", _
+ "G2485", "G2486", "G2487", "G2488", "G2510", "G2511", "G2512", "G2513", "G2514", "V0973", "V0974", "V0980", "V0981", "V2200", "V2201", "V2202", "V2210", "V2211", "V2212", "V2213", "V2214", "V2215", "V2216", "V2217", "V2218", "V2219", "V2220", "V2221", "V2222", "V2223", "V2224", "V2225", "V2226", "V2227", "V2229", "V2230", "V2250", "V2251", "V2252")
+'ALL = Array("V2222", "V2223", "V2224", "V2225", "V2226", "V2227", "V2229", "V2230", "V2250", "V2251", "V2252")
+ALL = Array("E2001")
+Dim allName As String
+Dim searchName As String
+Dim regEx1 As New RegExp
+Dim L1 As String
+L1 = "^([0-9]*)$"
+Dim D As String
+Dim level As Integer
+Dim t As Single
+Dim time1 As Single
+Dim t1  As Single
+Dim i As Long
+Dim j As Long
+Dim jbak As Long
+Dim k As Long
+k = 1
+Dim funcLoc As String
+funcLoc = ""
+Dim onOff As Integer
+Dim CRow As Single
+Dim progress As Single
+Dim total As Single
+Dim SHEET As String
+Dim FLSHEET As String
+Dim BOMSHEET As String
+Dim TEXT As String
+Dim TEMPWORKBOOK As String
+Dim FLWORKBOOK As String
+
+FLWORKBOOK = "CHA Asset Classification - FL v2.1.xlsx"
+
+For Each B In ALL
+    t = Timer:  'log runtime
+    j = 1
+    jbak = 2
+    SHEET = B
+    'SHEET = "E2001"
+    FLSHEET = SHEET & " FL"
+    BOMSHEET = SHEET & " BOM"
+    TEXT = SHEET & "*"
+    TEMPWORKBOOK = "ExcelCombine_" & SHEET & ".xlsx"
+    
+    If Dir("C:\Users\TURGESOEX\OneDrive - Wacker Chemie AG\CHA Asset Classification\Project Files\Temp\ExcelCombine_" & SHEET & ".xlsx") = "" Then
+        Workbooks.Add.SaveAs Filename:="C:\Users\TURGESOEX\OneDrive - Wacker Chemie AG\CHA Asset Classification\Project Files\Temp\ExcelCombine_" & SHEET & ".xlsx"
+    Else
+        Workbooks.Open Filename:="C:\Users\TURGESOEX\OneDrive - Wacker Chemie AG\CHA Asset Classification\Project Files\Temp\ExcelCombine_" & SHEET & ".xlsx"
+    End If
+        
+    Workbooks("ExcelCombine_" & SHEET & ".xlsx").Sheets.Add
+    Workbooks("ExcelCombine_" & SHEET & ".xlsx").Activate
+    
+    '"C:\Users\TURGESOEX\OneDrive - Wacker Chemie AG\CHA Asset Classification - FL V2.1.xlsb"
+    
+    'If WorkBookSheetExists(BOMSHEET, TEMPWORKBOOK) Then
+    If WorksheetExists(BOMSHEET) Then
+        Workbooks.Application.DisplayAlerts = False
+        Worksheets(BOMSHEET).Delete
+        Application.DisplayAlerts = True
+    End If
+    Sheets.Add(After:=Sheets(Sheets.count)).Name = BOMSHEET
+    
+    'If WorkBookSheetExists(FLSHEET, TEMPWORKBOOK) Then
+    If WorksheetExists(FLSHEET) Then
+        Application.DisplayAlerts = False
+        Worksheets(FLSHEET).Delete
+        Application.DisplayAlerts = True
+    End If
+    Sheets.Add(After:=Sheets(Sheets.count)).Name = FLSHEET
+    
+    If WorksheetExists("log") Then
+        Application.DisplayAlerts = False
+        Worksheets("log").Delete
+        Application.DisplayAlerts = True
+    End If
+    Sheets.Add(After:=Sheets(Sheets.count)).Name = "log"
+    
+    'If WorksheetExists("Sheet1", TEMPWORKBOOK) Then
+    If WorksheetExists("Sheet1") Then
+        Application.DisplayAlerts = False
+        Worksheets("Sheet1").Delete
+        Application.DisplayAlerts = True
+    End If
+    
+    If WorksheetExists("Sheet2") Then
+        Application.DisplayAlerts = False
+        Worksheets("Sheet2").Delete
+        Application.DisplayAlerts = True
+    End If
+    
+    If WorksheetExists("Sheet3") Then
+        Application.DisplayAlerts = False
+        Worksheets("Sheet3").Delete
+        Application.DisplayAlerts = True
+    End If
+    
+    Workbooks("CHA Asset Classification - FL V2.1.xlsb").Worksheets("FL").range("A:A").AutoFilter Field:=1
+    Workbooks("CHA Asset Classification - FL V2.1.xlsb").Worksheets("FL").range("A:A").AutoFilter Field:=1, Criteria1:=TEXT
+    Workbooks("CHA Asset Classification - FL V2.1.xlsb").Worksheets("FL").Cells.Copy Worksheets(FLSHEET).Cells
+    'Workbooks("ExcelCombine_" & SHEET & ".xlsx").
+    Workbooks("CHA Asset Classification - FL V2.1.xlsb").Worksheets("material number BOM").range("F:F").AutoFilter Field:=6
+    Workbooks("CHA Asset Classification - FL V2.1.xlsb").Worksheets("material number BOM").range("F:F").AutoFilter Field:=6, Criteria1:=TEXT
+    Workbooks("CHA Asset Classification - FL V2.1.xlsb").Worksheets("material number BOM").Cells.Copy Worksheets(BOMSHEET).Cells
+    'Workbooks("ExcelCombine_" & SHEET & ".xlsx").
+    
+    'Start Parsing Data Over...
+    
+
+    
+    total = Worksheets(BOMSHEET).Cells(Rows.count, "F").End(3).Row
+    
+    'Exit For
+        
+    'ufProgress.LabelProgress.Width = 0
+    'ufProgress.Show
+        
+    If Worksheets(BOMSHEET).range("A2").Value <> "" Then
+        
+        time1 = Timer - t
+        t1 = Timer
+    
+        'For Each C In Worksheets(BOMSHEET).range("F2:F" & Worksheets(BOMSHEET).Cells(Rows.count, "F").End(3).Row)
+        c = Worksheets(BOMSHEET).range("F2")
+        
+            allName = ""
+            searchName = ""
+            level = c.Offset(0, -4).Value
+        
+            progress = c.Row / total
+            With ufProgress
+                .LabelCaption.Caption = "Progress: " & progress * 100 & "%  " & "Processing Row " & c.Row & " of " & total & "  Time:" & (time1 + Timer - t1) \ 3600 & "h " & ((time1 + Timer - t1) Mod 3600) \ 60 & "m " & ((time1 + Timer - t1) Mod 3600) Mod 60 & "s " & "Estimated Time: " & ((Timer - t1) / progress + time1) \ 3600 & "h " & (((Timer - t1) / progress + time1) Mod 3600) \ 60 & "m " & (((Timer - t1) / progress + time1) Mod 3600) Mod 60 & "s "
+                .LabelProgress.Width = progress * (.FrameProgress.Width)
+            End With
+            DoEvents
+        
+            For i = 1 To level Step 1
+                D = c.Offset(0, i).Value
+                If D = "" Then
+                    Exit For
+                End If
+                 
+                With regEx1
+                    .Global = True
+                    .MultiLine = True
+                    .IgnoreCase = False
+                    .pattern = L1
+                End With
+            
+                If regEx1.Test(D) And allName = "" Then
+                    allName = c.Offset(0, i - 1).Value
+                    searchName = allName
+                    onOff = 1
+                End If
+            
+                If regEx1.Test(D) Then
+                    allName = allName & "=" & regEx1.Replace(D, "$1")
+                    onOff = 1
+                End If
+            
+                If c.Offset(0, i + 1).Value = "" And allName = "" Then
+                    allName = c.Offset(0, i).Value
+                    searchName = allName
+                    onOff = 0
+                End If
+            
+            Next
+        
+            If onOff = 1 Then
+     
+                If searchName <> funcLoc Then 'loop to avoid the search function...
+                funcLoc = searchName
+                'Test for if there is a missing entry - will cause error 91 if nothing is found
+                    '.range("A2:A" & Worksheets(FLSHEET).Cells(Rows.count, "A")
+                    ', After:=Worksheets(FLSHEET).range("A" & j)
+                    ', After:=Worksheets(FLSHEET).range("A" & j) 'Range("A2" , Worksheets("Sheet1").Range("A2").End(xlDown)).Rows.Count
+                    If Worksheets(FLSHEET).range("A2:A" & Worksheets(FLSHEET).Cells(Rows.count, "A").End(3).Row).Find(searchName, Worksheets(FLSHEET).range("A" & jbak), LookIn:=xlValues) Is Nothing Then
+     
+                        'Write to log sheet
+                        Worksheets("log").range("A" & k) = searchName
+                        Worksheets("log").range("B" & k) = allName
+                        Worksheets("log").range("C" & k) = "not found"
+                        k = k + 1
+                    Else
+                        addressRow = Worksheets(FLSHEET).range("A2:A" & Worksheets(FLSHEET).Cells(Rows.count, "A").End(3).Row).Find(searchName, After:=Worksheets(FLSHEET).range("A" & jbak), LookIn:=xlValues).Row
+                        Worksheets(FLSHEET).range(addressRow & ":" & addressRow).Copy
+                    
+                        'C.Offset(0, -3) = addressRow
+                    
+                        j = addressRow
+                        jbak = addressRow
+                    End If
+                End If  'end of search function avoid loop
+            
+                j = j + 1
+                Worksheets(FLSHEET).range(addressRow & ":" & addressRow).Copy
+    
+                Worksheets(FLSHEET).Cells(j, 1) = allName
+                Worksheets(FLSHEET).Cells(j, 11) = c.Offset(0, 20).Value
+                Worksheets(FLSHEET).Cells(j, 12) = c.Offset(0, 39).Value
+                Worksheets(FLSHEET).Cells(j, 13) = c.Offset(0, 40).Value
+                Worksheets(FLSHEET).Cells(j, 14) = c.Offset(0, 43).Value
+                Worksheets(FLSHEET).Cells(j, 15) = c.Offset(0, 41).Value & " " & c.Offset(0, 42).Value
+            
+            End If
+        'Aplication.StatusBar = "j = " & j & "    timer: " & Timer - t
+        
+        'Next C
+        
+    'Unload ufProgress
+    'MsgBox Timer - t
+        
+    End If
+        Application.CutCopyMode = False
+        Workbooks("ExcelCombine_" & SHEET & ".xlsx").Close SaveChanges:=True
+Next B
+    
+End Sub
