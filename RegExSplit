@@ -1,0 +1,44 @@
+Sub SplitBOM()
+
+
+Dim regEx As New RegExp
+Dim pattern(0 To 5) As String
+
+pattern(5) = "^([A-Z][0-9]+)$"
+pattern(4) = "^([A-Z][0-9]+)=(.+)$"
+pattern(3) = "^([A-Z][0-9]+=[A-Z][0-9]+)$"
+pattern(2) = "^([A-Z][0-9]+=[A-Z][0-9]+)=(.+)$"
+pattern(1) = "^([A-Z][0-9]+=[A-Z][0-9]+=[A-Z]+[0-9\._A-Z]*)$"
+pattern(0) = "^([A-Z][0-9]+=[A-Z][0-9]+=[A-Z]+[0-9\._A-Z]*)=(.+)$"
+
+Dim rowCount, i, j As Long
+rowCount = range("A:A").End(xlDown).Row
+'rowCount = 500
+'range("A:A").AutoFilter field:=1, Criteria1:="<>E*"
+
+For i = 2 To rowCount
+'For i = 18870 To rowCount
+    'a = range("M:M").Find(PUC, Cells(i, 13), xlValues).Row
+    A = Cells(i, 1).Value
+    For j = 0 To 5
+        With regEx
+            .Global = True
+            .MultiLine = True
+            .IgnoreCase = False
+            .pattern = pattern(j)
+        End With
+        
+        If regEx.Test(A) Then
+            Cells(i, 2) = regEx.Replace(A, "$1")
+            Cells(i, 3) = regEx.Replace(A, "$2")
+            Exit For
+        End If
+        
+    Next j
+Next i
+    
+    
+'g = range("E:E").Find(What:="TTT", After:=Cells(i - 1, 5), LookIn:=xlValues).Offset(0, -3).Row
+
+
+End Sub
