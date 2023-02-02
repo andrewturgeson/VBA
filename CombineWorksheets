@@ -1,0 +1,140 @@
+
+Sub Checklists()
+
+'use after running:
+'
+'     CombineBOMandFL_Working
+'
+'
+
+Dim progress, t As Single: t = Timer
+Dim c, g, h, i, j, k, l, m As Long
+j = 2: k = 2: l = 1
+
+'Copy and paste values from BOM and FL spreadsheet: temp
+Dim WB As String
+WB = "CHA Asset Classification - FL v2.1 - Copy.xlsb":   'The workbook that the BOM and FL were pulled from after run CombineBOMandFL_Working
+WBTO = "test.xlsx" 'destination workbook
+
+'FL
+Workbooks(WBTO).Worksheets("Sheet1").Activate
+Workbooks(WB).Worksheets("FL").range("C2:C163480").Copy Cells(2, 3)
+range("C2:C163480").Sort key1:=range("C2"), order1:=xlAscending, Header:=xlNo
+'BOM
+Workbooks(WB).Worksheets("material number BOM").range("A:A").AutoFilter Field:=1, Criteria1:="=":
+Workbooks(WB).Worksheets("material number BOM").range("D2:D580981").Copy Cells(2, 2)
+range("B2:B166827").Sort key1:=range("B2"), order1:=xlAscending, Header:=xlNo
+
+h = Worksheets("Sheet1").UsedRange.Rows.count
+
+'Application.Calculation is important!!!!
+Application.Calculation = XlCalculation.xlCalculationManual: 'turns off autocalculation so it should run faster... Formulas autoCalculate keeps turning back on (after Excel restart?)...
+Worksheets("Sheet1").Columns(5).Calculate
+ufProgress.Show
+
+Cells(1, 1) = "BOM Extra References"
+Cells(1, 2) = "BOM Match"
+Cells(1, 3) = "FL Match"
+Cells(1, 4) = "FL Extra References"
+Cells(1, 5) = "Test Match (refreshes)"
+range("A2:A" & h) = ""
+range("D2:D" & h) = ""
+range("E2:E" & h).Formula = "=if(offset(INDIRECT(ADDRESS(ROW(), COLUMN())), 0,-3) <> offset(INDIRECT(ADDRESS(ROW(), COLUMN())), 0 ,-2), ""TTT"","""")"
+'!!!!!!!!!!!!!
+'!!!!!!!!!!!!!
+'              ^^ formula slows it down set to "=if(offset(<<<SELF REF>>>,0,-3) <> offset(<<<SELF REF>>>,0,-2), "TTT","")
+'!!!!!!!!!!!!!
+'!!!!!!!!!!!!!
+
+'attempto numero uno
+If False Then
+    For i = 2 To h
+        progress = i / h
+        With ufProgress
+            .LabelCaption.Caption = "Progress: " & progress * 100 & "%  " & "Processing Row " & i & " of " & h & "  Time:" & (Timer - t) \ 3600 & "h " & ((Timer - t) Mod 3600) \ 60 & "m " & ((Timer - t) Mod 3600) Mod 60 & "s " & "Estimated Time: " & ((Timer - t) / progress) \ 3600 & "h " & (((Timer - t) / progress) Mod 3600) \ 60 & "m " & (((Timer - t) / progress) Mod 3600) Mod 60 & "s "
+            .LabelProgress.Width = progress * (.FrameProgress.Width)
+        End With
+        DoEvents
+    
+        progress = i / h
+        With ufProgress
+            .LabelCaption.Caption = "Progress: " & progress * 100 & "%  " & "Processing Row " & i & " of " & h & "  Time:" & (Timer - t) \ 3600 & "h " & ((Timer - t) Mod 3600) \ 60 & "m " & ((Timer - t) Mod 3600) Mod 60 & "s " & "Estimated Time: " & ((Timer - t) / progress) \ 3600 & "h " & (((Timer - t) / progress) Mod 3600) \ 60 & "m " & (((Timer - t) / progress) Mod 3600) Mod 60 & "s "
+            .LabelProgress.Width = progress * (.FrameProgress.Width)
+        End With
+        DoEvents
+           
+        If Cells(i, 2) > Cells(i, 3) Then
+            Cells(i, 3).Copy Cells(j, 4)
+            Cells(i, 3).Delete shift:=xlUp
+            j = j + 1
+            'MsgBox i & " -right is alphabetically lower": 'delete right!
+        ElseIf Cells(i, 3) > Cells(i, 2) Then
+            Cells(i, 2).Copy Cells(k, 1)
+            Cells(i, 2).Delete shift:=xlUp
+            k = k + 1
+            'MsgBox i & " -left is alphabetically lower": 'delete left!
+        End If
+    Next
+End If
+
+'MsgBox "break/stop here"
+
+'attempto numero dos
+If True Then
+    g = 1
+    For i = 2 To h - 1
+        h = Worksheets("Sheet1").range("B1").End(xlDown).Row
+        progress = g / h
+        With ufProgress
+            .LabelCaption.Caption = "Progress: " & progress * 100 & "%  " & "Processing Row " & i & " of " & h & "  Time:" & (Timer - t) \ 3600 & "h " & ((Timer - t) Mod 3600) \ 60 & "m " & ((Timer - t) Mod 3600) Mod 60 & "s " & "Estimated Time: " & ((Timer - t) / progress) \ 3600 & "h " & (((Timer - t) / progress) Mod 3600) \ 60 & "m " & (((Timer - t) / progress) Mod 3600) Mod 60 & "s "
+            .LabelProgress.Width = progress * (.FrameProgress.Width)
+        End With
+        DoEvents
+        
+        g = range("E:E").Find(What:="TTT", After:=Cells(i - 1, 5), LookIn:=xlValues).Offset(0, -3).Row
+        'MsgBox i
+        If Cells(g, 2) > Cells(g, 3) Or Cells(g, 3) = "" Then
+            For l = g + 1 To h
+                If Cells(g, 2) > Cells(l, 3) Then
+                    'leave blank/skip iteration
+                Else
+                    l = l - 1
+                    Exit For
+                End If
+            Next l
+            range(Cells(g, 3), Cells(l, 3)).Copy Cells(j, 4)
+            range(Cells(g, 3), Cells(l, 3)).Delete shift:=xlUp
+            j = j + 1 + l - g
+            'MsgBox i & " -right is alphabetically lower": 'delete right!
+        
+        ElseIf Cells(g, 3) > Cells(g, 2) Or Cells(g, 2) = "" Then
+            For m = g + 1 To h
+                If Cells(g, 3) > Cells(m, 2) Then
+                    'leave blank/skip iteration
+                Else
+                    m = m - 1
+                    Exit For
+                End If
+            Next m
+            'MsgBox "copy range"
+            range(Cells(g, 2), Cells(m, 2)).Copy Cells(k, 1)
+            range(Cells(g, 2), Cells(m, 2)).Delete shift:=xlUp
+            k = k + 1 + m - g
+            'MsgBox i & " -left is alphabetically lower": 'delete left!
+        End If
+        
+        Worksheets("Sheet1").Columns(5).Calculate
+        i = g - 1
+        If i >= h Then
+            MsgBox "check end of column C"
+            Exit For
+        End If
+    Next
+End If
+
+range(Cells(i, 3), Cells(range("C1").End(xlDown).Row, 3)).Copy Cells(j, 4)
+range(Cells(i, 3), Cells(range("C1").End(xlDown).Row, 3)) = ""
+
+Unload ufProgress
+
+End Sub
