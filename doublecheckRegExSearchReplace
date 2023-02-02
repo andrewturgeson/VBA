@@ -1,0 +1,143 @@
+Sub PumpISO()
+
+Application.Calculation = XlCalculation.xlCalculationManual: 'turns off autocalculation so it should run faster... Formulas autoCalculate keeps turning back on (after Excel restart?)...
+
+Dim f, search, colLetter, testColLetter, strPattern, strInput, ISO1, ISO2, ISO3, ISO4 As String
+
+Dim rowCount, colNumber, testColNumber, i, j, k As Long
+
+Dim regEx As New RegExp
+Dim loc, firstloc As Variant
+
+'Manually Change These
+    
+    colLetter = "H": 'column to search as letter form
+    search = "R": 'column to search as letter form
+    testColLetter = "A": 'secondary column to search as letter form
+    strPattern = ".*"
+ '   ISO1 = "SD":  'level 6.5
+    ISO2 = "PI": 'level 6
+ '   ISO3 = "PI": 'level 5
+ '   ISO4 = "PE": 'level 4
+    
+'End Changes
+
+colNumber = range(colLetter & 1).Column
+testColNumber = range(testColLetter & 1).Column
+Set loc = Worksheets("FL").range(colLetter & ":" & colLetter).Find(search, LookIn:=xlValues)
+Set firstloc = loc
+
+With regEx
+    .Global = True
+    .MultiLine = True
+    .IgnoreCase = True
+    .pattern = strPattern
+End With
+
+Do
+    loc.Activate
+    i = loc.Row
+    strInput = Cells(i, testColNumber).Value
+    If regEx.Test(strInput) Then
+'        Worksheets("FL").Cells(i, 25) = ISO1:'level 6.5
+        Worksheets("FL").Cells(i, 24) = ISO2: 'level 6
+'        Worksheets("FL").Cells(i, 23) = ISO3:'level 5
+'        Worksheets("FL").Cells(i, 22) = ISO4: 'level 4
+    
+    End If
+    Set loc = Worksheets("FL").range(colLetter & ":" & colLetter).Find(search, LookIn:=xlValues, After:=Cells(i, colNumber))
+    'MsgBox loc.Row = firstloc.Row
+    'j = j + 1
+Loop While Not loc Is Nothing And loc.Row <> firstloc.Row
+
+
+
+
+MsgBox j & " " & f
+End Sub
+
+Sub MergeFunctionalLocationBOMbak()
+
+'merges BOM into the functional location to add in the ZMMPOTEXT_MAT_Material_Description and the ZMMPOTEXT_MAT_PO_Text
+'to the Functional Location
+'There are multiple entries for each material part per functional location, and these are added in below [for now]
+
+'Worksheets("material number BOM").Activate
+
+
+
+Dim name As String
+Dim searchName As String
+Dim regEx1 As New RegExp
+Dim L1 As String
+L1 = "^([0-9]*)$"
+Dim D As String
+Dim i As Integer
+
+'Get column of the destination column (needs to be added into the worksheet in determined location)
+'Worksheets("FL test (merge)").Activate
+'For Each C In range("A1:AZ1")
+'    If C.Value = "ZMMPOTEXT_MAT_Material_Description" Then
+'        ZMMPODescTo = C.Address
+'    End If
+'    If C.Value = "ZMMPOTEXT_MAT_PO_Text" Then
+'        ZMMPOTextTo = C.Address
+'    End If
+'Next
+
+Worksheets("test").Activate
+
+For Each C In range("A1:AZ1")
+    If C.Value = "ZMMPOTEXT_MAT_Material_Description" Then
+        ZMMPODescFrom = C.Column
+    End If
+    If C.Value = "ZMMPOTEXT_MAT_PO_Text" Then
+        ZMMPOTextFrom = C.Column
+    End If
+Next
+
+Cells(1, 1) = ZMMPODescFrom
+Cells(1, 2) = ZMMPOTextFrom
+
+
+For Each C In range("F2:F" & Cells(Rows.count, "F").End(3).Row)
+    name = ""
+    searchName = ""
+    
+    For i = 0 To 9 Step 1
+        D = C.Offset(0, i).Value
+        If D = "" Then
+            Exit For
+        End If
+         
+        With regEx1
+            .Global = True
+            .MultiLine = True
+            .IgnoreCase = False
+            .Pattern = L1
+        End With
+        
+        If regEx1.Test(D) And name = "" Then
+            name = C.Offset(0, i - 1).Value
+            searchName = name
+        End If
+        
+        If regEx1.Test(D) Then
+            name = name & "=" & regEx1.Replace(D, "$1")
+        End If
+        
+        If C.Offset(0, i + 1).Value = "" And name = "" Then
+            name = C.Offset(0, i).Value
+            searchName = name
+        End If
+        
+    Next
+    
+    C.Offset(0, -1) = name
+    
+    C.Value = C.Offset(0, 39).Value
+    C.Offset(0, 1) = C.Offset(0, 40).Value
+    
+Next
+    
+End Sub
